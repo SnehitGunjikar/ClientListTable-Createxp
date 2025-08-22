@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import SortDropdown from './components/SortDropdown'
 
 const MOCK_CLIENTS = [
   { id: 10, name: 'John Doe', type: 'Individual', email: 'johndoe@email.com', status: 'Active', createdAt: '2024-01-15', updatedAt: '2024-01-20T14:45', updatedBy: 'Admin' },
@@ -41,8 +42,8 @@ const SORT_FIELDS = [
       <svg className="inline mr-2" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     ),
     options: [
-      { label: 'Oldest to Newest', value: 'asc' },
       { label: 'Newest to Oldest', value: 'desc' },
+      { label: 'Oldest to Newest', value: 'asc' },
     ],
   },
   {
@@ -52,8 +53,8 @@ const SORT_FIELDS = [
       <svg className="inline mr-2" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     ),
     options: [
-      { label: 'Oldest to Newest', value: 'asc' },
       { label: 'Newest to Oldest', value: 'desc' },
+      { label: 'Oldest to Newest', value: 'asc' },
     ],
   },
   {
@@ -68,6 +69,7 @@ const SORT_FIELDS = [
     ],
   },
 ];
+
 function formatDate(dateStr, withTime = false) {
   const d = new Date(dateStr);
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -87,12 +89,14 @@ function formatDate(dateStr, withTime = false) {
   }
   return date;
 }
+
 function App() {
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState({ field: 'name', direction: 'asc' });
   const [sortOpen, setSortOpen] = useState(false);
+  const [sortFields, setSortFields] = useState(SORT_FIELDS);
   const sortRef = useRef();
 
   useEffect(() => {
@@ -133,8 +137,14 @@ function App() {
     if (allSelected) setSelected([]);
     else setSelected(filteredClients.map(c => c.id));
   }
+  
   function toggleSelect(id) {
     setSelected(sel => sel.includes(id) ? sel.filter(i => i !== id) : [...sel, id]);
+  }
+  
+  function handleSortChange(field, direction) {
+    setSort({ field, direction });
+    setSortOpen(false);
   }
 
   return (
@@ -156,38 +166,17 @@ function App() {
           >
             <img width="20" height="20" src="https://img.icons8.com/ios/50/sorting-arrows.png" alt="sorting-arrows" />
           </button>
-          {/* I have implemented Sort Dropdown here*/}
-          {sortOpen && (
-              <div ref={sortRef} className="absolute right-0 top-12 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 font-semibold text-gray-900">Sort By</div>
-                <div className="p-3">
-                  {SORT_FIELDS.map(field => (
-                    <div key={field.key} className="mb-3">
-                      <div className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-700">{field.icon}{field.label}</div>
-                      <div className="flex gap-3 ml-6">
-                        {field.options.map(opt => (
-                          <button
-                            key={opt.value}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${sort.field === field.key && sort.direction === opt.value ? 'bg-gray-200 text-black font-medium' : 'hover:bg-gray-100 text-gray-700'}`}
-                            onClick={() => {
-                              setSort({ field: field.key, direction: opt.value });
-                              setSortOpen(false);
-                            }}
-                          >
-                            <span>{opt.label}</span>
-                            {sort.field === field.key && sort.direction === opt.value && (
-                              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path d="M5 12l5 5L20 7"/>
-                              </svg>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          
+          {/* Updated Sort Dropdown with dnd-kit */}
+          <SortDropdown 
+            isOpen={sortOpen}
+            sortRef={sortRef}
+            sortFields={sortFields}
+            currentSort={sort}
+            onSortChange={handleSortChange}
+            onClose={() => setSortOpen(false)}
+          />
+          
           <button className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-sm">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M12 5v14M5 12h14" />
@@ -276,7 +265,6 @@ function App() {
         </table>
       </div>
     </div>
-
   );
 }
 
