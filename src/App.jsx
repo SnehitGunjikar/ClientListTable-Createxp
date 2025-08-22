@@ -22,6 +22,52 @@ const TABS = [
   { label: 'Company', value: 'Company' },
 ];
 
+const SORT_FIELDS = [
+  {
+    key: 'name',
+    label: 'Client Name',
+    icon: (
+      <svg className="inline mr-2" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 8l-4 4-4-4"/></svg>
+    ),
+    options: [
+      { label: 'A-Z', value: 'asc' },
+      { label: 'Z-A', value: 'desc' },
+    ],
+  },
+  {
+    key: 'createdAt',
+    label: 'Created At',
+    icon: (
+      <svg className="inline mr-2" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    ),
+    options: [
+      { label: 'Oldest to Newest', value: 'asc' },
+      { label: 'Newest to Oldest', value: 'desc' },
+    ],
+  },
+  {
+    key: 'updatedAt',
+    label: 'Updated At',
+    icon: (
+      <svg className="inline mr-2" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    ),
+    options: [
+      { label: 'Oldest to Newest', value: 'asc' },
+      { label: 'Newest to Oldest', value: 'desc' },
+    ],
+  },
+  {
+    key: 'id',
+    label: 'Client ID',
+    icon: (
+      <svg className="inline mr-2" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 9h6v6H9z"/></svg>
+    ),
+    options: [
+      { label: 'A-Z', value: 'asc' },
+      { label: 'Z-A', value: 'desc' },
+    ],
+  },
+];
 function formatDate(dateStr, withTime = false) {
   const d = new Date(dateStr);
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -31,12 +77,12 @@ function formatDate(dateStr, withTime = false) {
     const timeParts = dateStr.split('T')[1].split(':');
     const hours = parseInt(timeParts[0], 10);
     const minutes = timeParts[1];
-    
+
     // Format as 12-hour time with AM/PM
     const period = hours >= 12 ? 'PM' : 'AM';
     const hour12 = hours % 12 || 12;
     const formattedHour = hour12.toString().padStart(2, '0');
-    
+
     return `${date}, ${formattedHour}:${minutes} ${period}`;
   }
   return date;
@@ -90,7 +136,7 @@ function App() {
   function toggleSelect(id) {
     setSelected(sel => sel.includes(id) ? sel.filter(i => i !== id) : [...sel, id]);
   }
-  
+
   return (
     <div className="min-h-screen bg-white w-full">
       {/*I have implemented the Header/Top part of the page*/}
@@ -110,6 +156,38 @@ function App() {
           >
             <img width="20" height="20" src="https://img.icons8.com/ios/50/sorting-arrows.png" alt="sorting-arrows" />
           </button>
+          {/* I have implemented Sort Dropdown here*/}
+          {sortOpen && (
+              <div ref={sortRef} className="absolute right-0 top-12 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                <div className="p-4 border-b border-gray-200 font-semibold text-gray-900">Sort By</div>
+                <div className="p-3">
+                  {SORT_FIELDS.map(field => (
+                    <div key={field.key} className="mb-3">
+                      <div className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-700">{field.icon}{field.label}</div>
+                      <div className="flex gap-3 ml-6">
+                        {field.options.map(opt => (
+                          <button
+                            key={opt.value}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${sort.field === field.key && sort.direction === opt.value ? 'bg-gray-200 text-black font-medium' : 'hover:bg-gray-100 text-gray-700'}`}
+                            onClick={() => {
+                              setSort({ field: field.key, direction: opt.value });
+                              setSortOpen(false);
+                            }}
+                          >
+                            <span>{opt.label}</span>
+                            {sort.field === field.key && sort.direction === opt.value && (
+                              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path d="M5 12l5 5L20 7"/>
+                              </svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           <button className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-sm">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M12 5v14M5 12h14" />
@@ -118,87 +196,87 @@ function App() {
           </button>
         </div>
       </div>
-              {/* I have implemented Tabs with the help of Tailwind CSS and React here*/}
-              <div className="flex gap-6 border-b border-gray-200 mb-4">
-          {TABS.map(t => (
-            <button 
-              key={t.value} 
-              onClick={() => setTab(t.value)} 
-              className={`py-2 px-1 border-b-2 transition-colors duration-150 ${tab === t.value ? 'border-black text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      {/* I have implemented Tabs with the help of Tailwind CSS and React here*/}
+      <div className="flex gap-6 border-b border-gray-200 mb-4">
+        {TABS.map(t => (
+          <button
+            key={t.value}
+            onClick={() => setTab(t.value)}
+            className={`py-2 px-1 border-b-2 transition-colors duration-150 ${tab === t.value ? 'border-black text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        {/* I have implemented Table with the help of Tailwind CSS and React here*/}
-        <div className="overflow-x-auto bg-white rounded-lg shadow-md mb-6">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-4 py-3 text-left">
+      {/* I have implemented Table with the help of Tailwind CSS and React here*/}
+      <div className="overflow-x-auto bg-white rounded-lg shadow-md mb-6">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-4 py-3 text-left">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                </div>
+              </th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Type</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated By</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredClients.map(client => (
+              <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={allSelected} 
-                      onChange={toggleSelectAll} 
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(client.id)}
+                      onChange={() => toggleSelect(client.id)}
                       className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
                     />
                   </div>
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Type</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated By</th>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer hover:underline">{client.id}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{client.type}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{client.email}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${client.status === 'Active' ? 'bg-green-100 text-green-800 status-active' : 'bg-gray-100 text-gray-800'}`}>
+                    <span className={`h-2 w-2 mr-1.5 rounded-full status-dot ${client.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                    {client.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{formatDate(client.createdAt)}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{formatDate(client.updatedAt, true)}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{client.updatedBy}</td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredClients.map(client => (
-                <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <input 
-                        type="checkbox" 
-                        checked={selected.includes(client.id)} 
-                        onChange={() => toggleSelect(client.id)} 
-                        className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer hover:underline">{client.id}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{client.type}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{client.email}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${client.status === 'Active' ? 'bg-green-100 text-green-800 status-active' : 'bg-gray-100 text-gray-800'}`}>
-                      <span className={`h-2 w-2 mr-1.5 rounded-full status-dot ${client.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                      {client.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{formatDate(client.createdAt)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{formatDate(client.updatedAt, true)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{client.updatedBy}</td>
-                </tr>
-              ))}
-              {filteredClients.length === 0 && (
-                <tr>
-                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p className="mt-2 text-sm">No clients found.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {filteredClients.length === 0 && (
+              <tr>
+                <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p className="mt-2 text-sm">No clients found.</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-    
+    </div>
+
   );
 }
 
