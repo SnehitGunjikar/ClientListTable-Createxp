@@ -1,6 +1,4 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import SortDropdown from './components/SortDropdown'
 
@@ -94,9 +92,13 @@ function App() {
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState({ field: 'name', direction: 'asc' });
+  // Active, applied sorts in priority order
+  const [sorts, setSorts] = useState([
+    { field: 'name', direction: 'asc' },
+    { field: 'createdAt', direction: 'desc' },
+  ]);
   const [sortOpen, setSortOpen] = useState(false);
-  const [sortFields, setSortFields] = useState(SORT_FIELDS);
+  const sortFields = SORT_FIELDS;
   const sortRef = useRef();
 
   useEffect(() => {
@@ -116,20 +118,39 @@ function App() {
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase())
     );
-    // Sort logic
-    data = [...data].sort((a, b) => {
-      let aVal = a[sort.field];
-      let bVal = b[sort.field];
-      if (sort.field === 'createdAt' || sort.field === 'updatedAt') {
-        aVal = new Date(aVal);
-        bVal = new Date(bVal);
-      }
-      if (aVal < bVal) return sort.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sort.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
+    // Multi-field sort logic
+    if (sorts && sorts.length > 0) {
+      data = [...data].sort((a, b) => {
+        for (const rule of sorts) {
+          const field = rule.field;
+          const direction = rule.direction;
+          let aVal = a[field];
+          let bVal = b[field];
+
+          const isDateField = field === 'createdAt' || field === 'updatedAt';
+          const isStringField = typeof aVal === 'string' && typeof bVal === 'string' && !isDateField;
+          const isNumberField = typeof aVal === 'number' && typeof bVal === 'number';
+
+          let cmp = 0;
+          if (isDateField) {
+            const aTime = new Date(aVal).getTime();
+            const bTime = new Date(bVal).getTime();
+            cmp = aTime === bTime ? 0 : (aTime < bTime ? -1 : 1);
+          } else if (isStringField) {
+            cmp = aVal.localeCompare(bVal, undefined, { sensitivity: 'base' });
+          } else if (isNumberField) {
+            cmp = aVal === bVal ? 0 : (aVal < bVal ? -1 : 1);
+          } else {
+            cmp = String(aVal).localeCompare(String(bVal), undefined, { sensitivity: 'base' });
+          }
+
+          if (cmp !== 0) return direction === 'asc' ? cmp : -cmp;
+        }
+        return 0;
+      });
+    }
     return data;
-  }, [tab, search, sort]);
+  }, [tab, search, sorts]);
 
   const allSelected = filteredClients.length > 0 && selected.length === filteredClients.length;
 
@@ -142,8 +163,9 @@ function App() {
     setSelected(sel => sel.includes(id) ? sel.filter(i => i !== id) : [...sel, id]);
   }
   
-  function handleSortChange(field, direction) {
-    setSort({ field, direction });
+  // Receive final applied sorts from dropdown
+  function handleApplySort(newSorts) {
+    setSorts(newSorts);
     setSortOpen(false);
   }
 
@@ -151,7 +173,7 @@ function App() {
     <div className="min-h-screen bg-white w-full">
       {/*I have implemented the Header/Top part of the page*/}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
+        <h1 className="text-4xl font-bold text-gray-900">Clients</h1>
         <div className='flex items-center gap-3 relative'>
           <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
             <img width="20" height="20" src="https://img.icons8.com/ios-filled/50/search--v1.png" alt="search--v1" />
@@ -172,12 +194,11 @@ function App() {
             isOpen={sortOpen}
             sortRef={sortRef}
             sortFields={sortFields}
-            currentSort={sort}
-            onSortChange={handleSortChange}
-            onClose={() => setSortOpen(false)}
+            currentSorts={sorts}
+            onApplySort={handleApplySort}
           />
           
-          <button className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-sm">
+          <button className="flex items-center gap-2 hover:bg-gray-800 text-black px-4 py-2 rounded-lg transition-colors font-medium shadow-sm">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M12 5v14M5 12h14" />
             </svg>

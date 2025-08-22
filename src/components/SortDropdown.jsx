@@ -16,12 +16,16 @@ const SortableItem = ({ field }) => {
     <div 
       ref={setNodeRef} 
       style={style} 
-      {...attributes} 
-      {...listeners}
-      className="mb-3 cursor-grab active:cursor-grabbing"
+      className="mb-3"
     >
       <div className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-700">
-        <span className="inline-flex items-center justify-center w-5 h-5">
+        <span 
+          className="inline-flex items-center justify-center w-5 h-5 cursor-grab active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder"
+          role="button"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M8 9h8M8 15h8" />
           </svg>
@@ -34,7 +38,7 @@ const SortableItem = ({ field }) => {
             key={opt.value}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors 
               ${field.selected && field.direction === opt.value ? 'bg-gray-200 text-black font-medium' : 'hover:bg-gray-100 text-gray-700'}`}
-            onClick={() => field.onSelect(field.key, opt.value)}
+            onClick={(e) => { e.stopPropagation(); field.onSelect(field.key, opt.value); }}
           >
             <span>{opt.label}</span>
             {field.selected && field.direction === opt.value && (
@@ -49,9 +53,11 @@ const SortableItem = ({ field }) => {
   );
 };
 
-// Update the component props to include onClearSort
-const SortDropdown = ({ isOpen, sortRef, sortFields, currentSort, onSortChange, onClearSort, onClose }) => {
+// Multi-select sortable dropdown; selections are local and applied on submit
+const SortDropdown = ({ isOpen, sortRef, sortFields, currentSorts = [], onApplySort }) => {
   const [items, setItems] = useState(sortFields);
+  // local selected rules: [{ field, direction }]
+  const [selected, setSelected] = useState(currentSorts);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -70,7 +76,34 @@ const SortDropdown = ({ isOpen, sortRef, sortFields, currentSort, onSortChange, 
         
         return arrayMove(items, oldIndex, newIndex);
       });
+      // Also reorder selected according to new item order
+      setSelected((prev) => {
+        const order = items.map(i => i.key);
+        return [...prev].sort((a, b) => order.indexOf(a.field) - order.indexOf(b.field));
+      });
     }
+  };
+
+  const toggleFieldDirection = (fieldKey, direction) => {
+    setSelected(prev => {
+      const without = prev.filter(s => s.field !== fieldKey);
+      return [...without, { field: fieldKey, direction }];
+    });
+  };
+
+  const handleClearField = (fieldKey) => {
+    setSelected(prev => prev.filter(s => s.field !== fieldKey));
+  };
+
+  const handleClearAll = () => {
+    setSelected([]);
+  };
+
+  const handleApply = () => {
+    
+    const order = items.map(i => i.key);
+    const ordered = [...selected].sort((a, b) => order.indexOf(a.field) - order.indexOf(b.field));
+    onApplySort?.(ordered);
   };
 
   if (!isOpen) return null;
@@ -88,30 +121,43 @@ const SortDropdown = ({ isOpen, sortRef, sortFields, currentSort, onSortChange, 
             items={items.map(item => item.key)}
             strategy={verticalListSortingStrategy}
           >
-            {items.map(field => (
-              <SortableItem 
-                key={field.key} 
-                field={{
-                  ...field,
-                  selected: currentSort.field === field.key,
-                  direction: currentSort.direction,
-                  onSelect: onSortChange
-                }} 
-              />
-            ))}
+            {items.map(field => {
+              const current = selected.find(s => s.field === field.key);
+              return (
+                <div key={field.key} className="relative">
+                  <SortableItem 
+                    field={{
+                      ...field,
+                      selected: Boolean(current),
+                      direction: current?.direction,
+                      onSelect: toggleFieldDirection
+                    }} 
+                  />
+                  {current && (
+                    <button
+                      className="absolute right-0 top-1 text-gray-400 hover:text-gray-600"
+                      onClick={(e) => { e.stopPropagation(); handleClearField(field.key); }}
+                      aria-label="Remove sort"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </SortableContext>
         </DndContext>
       </div>
       <div className="p-3 border-t border-gray-200 flex justify-between">
         <button 
-          onClick={onClearSort} // Changed from onClose to onClearSort
+          onClick={handleClearAll}
           className="text-gray-600 hover:text-gray-800 text-sm font-medium"
         >
           Clear all
         </button>
         <button 
-          onClick={onClose}
-          className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium"
+          onClick={handleApply}
+          className="bg-black text-black px-4 py-2 rounded-lg text-sm font-medium"
         >
           Apply Sort
         </button>
