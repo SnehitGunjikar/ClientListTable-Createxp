@@ -49,7 +49,8 @@ const SortableItem = ({ field }) => {
   );
 };
 
-const SortDropdown = ({ isOpen, sortRef, sortFields, currentSort, onSortChange, onClose }) => {
+// Update the component props to include onClearSort
+const SortDropdown = ({ isOpen, sortRef, sortFields, currentSort, onSortChange, onClearSort, onClose }) => {
   const [items, setItems] = useState(sortFields);
   
   const sensors = useSensors(
@@ -103,7 +104,7 @@ const SortDropdown = ({ isOpen, sortRef, sortFields, currentSort, onSortChange, 
       </div>
       <div className="p-3 border-t border-gray-200 flex justify-between">
         <button 
-          onClick={onClose} 
+          onClick={onClearSort} // Changed from onClose to onClearSort
           className="text-gray-600 hover:text-gray-800 text-sm font-medium"
         >
           Clear all
